@@ -1,16 +1,15 @@
 import pygame
+from enum import Enum
 
 pygame.init()
 
 white = (255, 255, 255)
 black = (0, 0, 0)
-gray = (25, 25, 25)
-ligray = (50, 50, 50)
 
-tile_s = 50
+tile_s = 25
 
-vis_world_w = 16
-vis_world_h = 9
+vis_world_w = 25
+vis_world_h = 25
 
 scr_w = tile_s * vis_world_w
 scr_h = tile_s * vis_world_h
@@ -27,6 +26,14 @@ gron = pygame.transform.scale(gron, (tile_s, tile_s))
 ston = pygame.transform.scale(ston, (tile_s, tile_s))
 watr = pygame.transform.scale(watr, (tile_s, tile_s))
 lava = pygame.transform.scale(lava, (tile_s, tile_s))
+
+
+class Direction(Enum):
+    Up = 0
+    Down = 180
+    Left = 90
+    Right = 270
+
 
 world_h = 25
 world_w = 25
@@ -48,6 +55,50 @@ name_to_tile = {
     'ston': ston,
     'watr': watr
 }
+
+
+class Tank:
+    def __init__(self, tile, x, y):
+        self.tile = pygame.image.load(f'tiles/{tile}')
+        self.w = tile_s
+        self.h = tile_s
+        self.s = (self.w, self.h)
+
+        self.tile = pygame.transform.scale(self.tile, self.s)
+        self.rect = self.tile.get_rect()
+        self.x = tile_s * x + tile_s // 2
+        self.y = tile_s * y + tile_s // 2
+
+        self.dir = Direction.Right
+        self.speed = 2
+        self.on_move = False
+
+    def render(self, screen):
+        self.rect.centerx = self.x
+        self.rect.centery = self.y
+        tile = pygame.transform.rotate(
+            self.tile,
+            self.dir.value
+        )
+        screen.blit(tile, self.rect)
+
+    def move(self):
+        if not self.on_move:
+            return
+        if self.dir == Direction.Up:
+            self.y -= self.speed
+        if self.dir == Direction.Down:
+            self.y += self.speed
+        if self.dir == Direction.Left:
+            self.x -= self.speed
+        if self.dir == Direction.Right:
+            self.x += self.speed
+
+
+arrows = [
+    pygame.K_UP, pygame.K_DOWN,
+    pygame.K_LEFT, pygame.K_RIGHT
+]
 
 
 def load_world():
@@ -80,6 +131,9 @@ def load_world():
     file.close()
 
 
+tank = Tank('tank.png', 3, 3)
+mank = Tank('mank.png', 21, 21)
+
 load_world()
 
 run = True
@@ -88,17 +142,23 @@ while run:
         if event.type == pygame.QUIT:
             run = False
 
-    if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_UP and y_shift > 0:
-            y_shift -= 1
-        if event.key == pygame.K_DOWN and y_shift < world_h - vis_world_h:
-            y_shift += 1
-        if event.key == pygame.K_LEFT and x_shift > 0:
-            x_shift -= 1
-        if event.key == pygame.K_RIGHT and x_shift < world_w - vis_world_w:
-            x_shift += 1
-
     screen.fill(black)
+
+    if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_UP:
+            tank.dir = Direction.Up
+        if event.key == pygame.K_DOWN:
+            tank.dir = Direction.Down
+        if event.key == pygame.K_LEFT:
+            tank.dir = Direction.Left
+        if event.key == pygame.K_RIGHT:
+            tank.dir = Direction.Right
+
+    if event.type == pygame.KEYDOWN and event.key in arrows:
+        tank.on_move = True
+
+    if event.type == pygame.KEYUP and event.key in arrows:
+        tank.on_move = False
 
     for i in range(vis_world_h):
         for j in range(vis_world_w):
@@ -112,6 +172,12 @@ while run:
                 cell_w = tile_s
                 cell_h = tile_s
                 pygame.draw.rect(screen, white, (x, y, cell_w, cell_h), 1)
+
+    tank.move()
+    tank.render(screen)
+
+    mank.move()
+    mank.render(screen)
 
     pygame.time.delay(50)
     pygame.display.update()

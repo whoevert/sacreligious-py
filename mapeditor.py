@@ -23,30 +23,6 @@ ston = pygame.transform.scale(ston, (tile_s, tile_s))
 watr = pygame.transform.scale(watr, (tile_s, tile_s))
 lava = pygame.transform.scale(lava, (tile_s, tile_s))
 
-world = [
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
-    [ston, ston, ston, watr, watr, watr, ston, ston, ston, ston, ston, gron, gron, gron, gron, gron, gras, gras],
-    [ston, gras, gras, watr, watr, watr, gras, gras, ston, ston, ston, ston, gron, gron, gron, gras, gras, watr],
-    [ston, gras, gras, watr, watr, watr, gras, gras, gras, ston, ston, gron, gron, gron, gras, gras, watr, watr],
-    [gron, gron, ston, ston, ston, ston, ston, gras, gras, gron, gron, gron, gron, gras, gras, watr, watr, watr],
-    [gron, gron, gron, gron, gron, gron, gron, gron, gron, gron, gron, gron, gras, gras, watr, watr, watr, watr],
-    [ston, gron, gron, gron, gron, gron, gron, gron, gron, gron, gron, gras, gras, watr, watr, watr, watr, watr],
-    [ston, gras, ston, ston, ston, ston, ston, gras, ston, ston, ston, ston, gras, gras, watr, watr, watr, watr],
-    [ston, gras, gras, watr, watr, watr, gras, ston, ston, lava, lava, ston, ston, gras, gras, watr, watr, watr],
-    [ston, gras, gras, watr, watr, watr, ston, ston, lava, lava, lava, lava, ston, ston, gras, gras, watr, watr],
-    [ston, ston, ston, watr, watr, watr, ston, lava, lava, lava, lava, lava, lava, ston, gras, gras, gras, watr],
-]
-
 world_w = 25
 world_h = 25
 
