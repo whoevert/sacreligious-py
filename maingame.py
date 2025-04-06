@@ -37,12 +37,8 @@ class Direction(Enum):
 world_h = 25
 world_w = 25
 
-world = []
-for i in range(world_h):
-    row = []
-    for j in range(world_w):
-        row.append(None)
-    world.append(row)
+gron = pygame.sprite.Group()
+world = pygame.sprite.Group()
 
 x_shift = 0
 y_shift = 0
@@ -54,45 +50,54 @@ name_to_tile = {
 }
 
 
-class Tank:
+class Tank(pygame.sprite.Sprite):
     def __init__(self, tile, x, y):
-        self.tile = pygame.image.load(f'tiles/{tile}')
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load(f'tiles/{tile}')
         self.w = tank_s
         self.h = tank_s
         self.s = (self.w, self.h)
 
-        self.tile = pygame.transform.scale(self.tile, self.s)
-        self.rect = self.tile.get_rect()
+        self.original_image = pygame.transform.scale(
+            self.image, self.s
+        )
+
+        self.image = pygame.transform.scale(
+            self.image, self.s
+        )
+
+        self.mask = pygame.mask.from_surface(self.image)
+
+        self.rect = self.image.get_rect()
         self.x = tile_s * x + tile_s // 2
         self.y = tile_s * y + tile_s // 2
+
+        self.rect.centerx = round(self.x)
+        self.rect.centery = round(self.y)
 
         self.dir = Direction.Right
         self.speed = tile_s / 12
         self.on_move = False
 
-    def update_rect(self):
-        pass
+    def change_dir(self, direction: Direction):
 
-    def render(self, screen):
-        self.update_rect()
-        tile = pygame.transform.rotate(
-            self.tile,
+        self.dir = direction
+
+        self.image = pygame.transform.rotate(
+            self.original_image,
             self.dir.value
         )
-        screen.blit(tile, self.rect)
 
-    def change_dir(self, direction: Direction):
-        self.dir = dir
+        self.mask = pygame.mask.from_surface(self.image)
 
 class PlayerTank(Tank):
 
-    def update_rect(self):
-        self.rect.centerx = round(self.x)
-        self.rect.centery = round(self.y)
-
-    def move(self):
+    def update(self):
         global world
         global x_shift, y_shift
+
+        self.rect.centerx = round(self.x)
+        self.rect.centery = round(self.y)
 
         weight_horld = world_h * tile_s
         width_world = world_w * tile_s
@@ -127,15 +132,19 @@ class PlayerTank(Tank):
             else:
                 self.x += self.speed
 
+        self.rect.centerx = round(self.x)
+        self.rect.centery = round(self.y)
+
 class EnemyMank(Tank):
 
-    def update_rect(self):
+    def update(self):
+
         self.rect.centerx = round(self.x - x_shift)
         self.rect.centery = round(self.y - y_shift)
 
-    def move(self):
         if not self.on_move:
             return
+
         if self.dir == Direction.Up:
             self.y -= self.speed
         if self.dir == Direction.Down:
@@ -145,6 +154,30 @@ class EnemyMank(Tank):
         if self.dir == Direction.Right:
             self.x += self.speed
 
+        self.rect.centerx = round(self.x - x_shift)
+        self.rect.centery = round(self.y - y_shift)
+
+
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, image, i, j):
+        super().__init__()
+        self.image = image
+        self.i = i
+        self.j = j
+
+        self.rect = image.get_rect()
+        self.x = j * tile_s
+        self.y = i * tile_s
+
+        self.mask = pygame.mask.from_surface(self.image)
+
+    def update(self):
+        global x_shift, y_shift
+        self.x = self.j * tile_s - x_shift
+        self.y = self.i * tile_s - y_shift
+        self.rect.x = round(self.x)
+        self.rect.y = round(self.y)
+
 
 arrows = [
     pygame.K_UP, pygame.K_DOWN,
@@ -153,7 +186,7 @@ arrows = [
 
 
 def load_world():
-    global world, world_h, world_w
+    global world, world_h, world_w, gron
     file = open('map.txt', 'r')
 
     world_info = next(file)
@@ -161,12 +194,14 @@ def load_world():
     world_w = int(world_s[0])
     world_h = int(world_s[1])
 
-    world = []
+    world = pygame.sprite.Group()
+
+    gron = pygame.sprite.Group()
+
     for i in range(world_h):
-        row = []
         for j in range(world_w):
-            row.append(None)
-        world.append(row)
+            tile = Tile(default_tile, i, j)
+            gron.add(tile)
 
     for line in file:
         line = line.strip()
@@ -175,9 +210,9 @@ def load_world():
         i = int(i)
         j = int(j)
 
-        tile = name_to_tile[tile]
+        image = name_to_tile[tile]
 
-        world[i][j] = tile
+        world.add(Tile(image, i, j))
 
     file.close()
 
@@ -192,6 +227,11 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+
+    gron.update()
+    world.update()
+    tank.update()
+    mank.update()
 
     screen.fill(black)
 
@@ -211,22 +251,22 @@ while run:
     if event.type == pygame.KEYUP and event.key in arrows:
         tank.on_move = False
 
-    for i in range(world_h):
-        for j in range(world_w):
-            x = round(j * tile_s - x_shift)
-            y = round(i * tile_s - y_shift)
+    # for i in range(world_h):
+    #     for j in range(world_w):
+    #         x = round(j * tile_s - x_shift)
+    #         y = round(i * tile_s - y_shift)
+    #
+    #         screen.blit(default_tile, (x, y))
+    #
+    #         cell = world[i][j]
+    #         if cell is not None:
+    #             screen.blit(cell, (x, y))
 
-            screen.blit(default_tile, (x, y))
+    gron.draw(screen)
+    world.draw(screen)
 
-            cell = world[i][j]
-            if cell is not None:
-                screen.blit(cell, (x, y))
-
-    tank.move()
-    tank.render(screen)
-
-    mank.move()
-    mank.render(screen)
+    screen.blit(tank.image, tank.rect)
+    screen.blit(mank.image, mank.rect)
 
     pygame.time.delay(25)
     pygame.display.update()
