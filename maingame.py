@@ -1,5 +1,7 @@
 import pygame
 from enum import Enum
+from pygame.sprite import collide_mask
+from pygame.sprite import spritecollideany
 
 pygame.init()
 
@@ -16,15 +18,17 @@ scr_w = tile_s * vis_world_w
 scr_h = tile_s * vis_world_h
 screen = pygame.display.set_mode((scr_w, scr_h))
 
-gras = pygame.image.load('tiles/grass.jpg')
-ston = pygame.image.load('tiles/stone.jpg')
-watr = pygame.image.load('tiles/water.jpg')
+gras = pygame.image.load('tiles/grass.png')
+ston = pygame.image.load('tiles/stone.png')
+watr = pygame.image.load('tiles/water.png')
 
 gras = pygame.transform.scale(gras, (tile_s, tile_s))
 ston = pygame.transform.scale(ston, (tile_s, tile_s))
 watr = pygame.transform.scale(watr, (tile_s, tile_s))
 
 default_tile = gras
+
+
 
 
 class Direction(Enum):
@@ -37,6 +41,7 @@ class Direction(Enum):
 world_h = 25
 world_w = 25
 
+fires = pygame.sprite.Group()
 gron = pygame.sprite.Group()
 world = pygame.sprite.Group()
 
@@ -96,13 +101,16 @@ class PlayerTank(Tank):
         global world
         global x_shift, y_shift
 
-        self.rect.centerx = round(self.x)
-        self.rect.centery = round(self.y)
-
         weight_horld = world_h * tile_s
         width_world = world_w * tile_s
+
         if not self.on_move:
             return
+
+        old_x = self.x
+        old_y = self.y
+        old_x_shift = x_shift
+        old_y_shift = y_shift
 
         if self.dir == Direction.Up:
             if self.y <= scr_h / 2 and y_shift - self.speed >= 0:
@@ -135,6 +143,14 @@ class PlayerTank(Tank):
         self.rect.centerx = round(self.x)
         self.rect.centery = round(self.y)
 
+        if spritecollideany(self, world, collide_mask):
+            self.x = old_x
+            self.y = old_y
+            x_shift = old_x_shift
+            y_shift = old_y_shift
+            self.rect.centerx = round(self.x)
+            self.rect.centery = round(self.y)
+
 class EnemyMank(Tank):
 
     def update(self):
@@ -144,6 +160,11 @@ class EnemyMank(Tank):
 
         if not self.on_move:
             return
+
+        old_x = self.x
+        old_y = self.y
+        old_x_shift = x_shift
+        old_y_shift = y_shift
 
         if self.dir == Direction.Up:
             self.y -= self.speed
@@ -177,6 +198,30 @@ class Tile(pygame.sprite.Sprite):
         self.y = self.i * tile_s - y_shift
         self.rect.x = round(self.x)
         self.rect.y = round(self.y)
+
+
+class Shell(pygame.sprite.Sprite):
+    def __init__(self, image, i, j):
+        super().__init__()
+        self.image = image
+        self.i = i
+        self.j = j
+
+        self.rect = image.get_rect()
+        self.x = j * tile_s
+        self.y = i * tile_s
+
+        self.mask = pygame.mask.from_surface(self.image)
+        self.speed = tile_s / 6
+        self.fired = False
+
+        def update(self):
+
+            if not self.fired:
+                return
+
+            if tank.dir == Direction.Up:
+
 
 
 arrows = [
@@ -220,6 +265,8 @@ def load_world():
 tank = PlayerTank('tank.png', 3, 3)
 mank = EnemyMank('mank.png', 21, 21)
 
+fire = Shell('fire.png')
+
 load_world()
 
 run = True
@@ -232,6 +279,7 @@ while run:
     world.update()
     tank.update()
     mank.update()
+    fires.update()
 
     screen.fill(black)
 
@@ -251,22 +299,15 @@ while run:
     if event.type == pygame.KEYUP and event.key in arrows:
         tank.on_move = False
 
-    # for i in range(world_h):
-    #     for j in range(world_w):
-    #         x = round(j * tile_s - x_shift)
-    #         y = round(i * tile_s - y_shift)
-    #
-    #         screen.blit(default_tile, (x, y))
-    #
-    #         cell = world[i][j]
-    #         if cell is not None:
-    #             screen.blit(cell, (x, y))
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+        fires.add(fire)
 
     gron.draw(screen)
     world.draw(screen)
 
     screen.blit(tank.image, tank.rect)
     screen.blit(mank.image, mank.rect)
+    fires.draw(screen)
 
     pygame.time.delay(25)
     pygame.display.update()
